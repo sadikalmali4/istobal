@@ -1252,7 +1252,7 @@ const MODELS=[
 ];
 
 /* === ANLIL KUR === */
-let eurTL=42, usdTL=38;
+let eurTL=42, usdTL=38, ratesLoaded=false;
 
 async function fetchRates(){
   ['kb-eur','kb-usd'].forEach(id=>document.getElementById(id).classList.add('loading'));
@@ -1264,10 +1264,11 @@ async function fetchRates(){
       fetch('https://api.exchangerate-api.com/v4/latest/USD')
     ]);
     const d1=await r1.json(), d2=await r2.json();
-    eurTL=Math.round(d1.rates.TRY*100)/100;
-    usdTL=Math.round(d2.rates.TRY*100)/100;
-    updateKurDisplay();
-    recalc();
+    const e1=Math.round(d1.rates.TRY*100)/100;
+    const u1=Math.round(d2.rates.TRY*100)/100;
+    if(e1>5 && e1<500) eurTL=e1;
+    if(u1>5 && u1<500) usdTL=u1;
+    updateKurDisplay();recalc();
   }catch{
     try{
       const [r1,r2]=await Promise.all([
@@ -1275,12 +1276,13 @@ async function fetchRates(){
         fetch('https://api.frankfurter.app/latest?from=USD&to=TRY')
       ]);
       const d1=await r1.json(), d2=await r2.json();
-      eurTL=Math.round(d1.rates.TRY*100)/100;
-      usdTL=Math.round(d2.rates.TRY*100)/100;
-      updateKurDisplay();
-      recalc();
+      const e2=Math.round(d1.rates.TRY*100)/100;
+      const u2=Math.round(d2.rates.TRY*100)/100;
+      if(e2>5 && e2<500) eurTL=e2;
+      if(u2>5 && u2<500) usdTL=u2;
+      updateKurDisplay();recalc();
     }catch{
-      updateKurDisplay('manuel');
+      updateKurDisplay('tahmini');recalc();
     }
   }
 }
@@ -1299,7 +1301,8 @@ function fmtTL(v){
   return s+Math.round(a)+' ₺';
 }
 function fmtEUR(tryVal){
-  const v=tryVal/eurTL,a=Math.abs(v),s=v<0?'-':'';
+  const rate=eurTL>5?eurTL:42;
+  const v=tryVal/rate,a=Math.abs(v),s=v<0?'-':'';
   if(a>=1e3)return '= '+s+Math.round(a/1e3)+'K €';
   return '= '+s+Math.round(v)+' €';
 }
@@ -1440,10 +1443,12 @@ function recalc(){
   const cilEUR   = getVal('i-cil',   6.0);
   const bakimEUR = getVal('i-bakim', 0);   // bakım için varsayılan 0
 
-  const makTL   = makEUR   * eurTL;
-  const kopTL   = kopEUR   * eurTL;   // €/L → ₺/L
-  const cilTL   = cilEUR   * eurTL;   // €/L → ₺/L
-  const bakimTL = bakimEUR * eurTL;   // €/yıl → ₺/yıl
+  // Güvenlik: kur hiçbir zaman 0 veya çok küçük olmamalı
+  const safeEUR = eurTL > 5 ? eurTL : 42;
+  const makTL   = makEUR   * safeEUR;
+  const kopTL   = kopEUR   * safeEUR;
+  const cilTL   = cilEUR   * safeEUR;
+  const bakimTL = bakimEUR * safeEUR;
 
   const suL = suTon / 1000;
   const ayArac = arac * 30;  // aylık araç sayısı
@@ -1473,7 +1478,7 @@ function recalc(){
   const ktl=document.getElementById('r-kar-tl');
   ktl.textContent=(ayKar>=0?'+':'')+fmtTL(ayKar); ktl.style.color=karC;
   const keur=document.getElementById('r-kar-eur');
-  keur.textContent=(ayKar>=0?'= +':'= ')+Math.round(ayKar/eurTL)+' €'; keur.style.color=karC;
+  keur.textContent=(ayKar>=0?'= +':'= ')+Math.round(ayKar/(eurTL>5?eurTL:42))+' €'; keur.style.color=karC;
 
   document.getElementById('r-ara-tl').textContent=fmtTL(degV);
   document.getElementById('r-ara-eur').textContent='= '+Math.round(degV/eurTL)+' €';
@@ -1498,7 +1503,7 @@ function recalc(){
 
   document.getElementById('br').innerHTML=
     items.map(([n,v])=>`<div class="drow"><span class="dn">${n}</span><span class="dv">${fmtTL(v)}</span><span class="dv2">${fmtEUR(v).replace('= ','')}</span></div>`).join('')+
-    `<div class="drow tot"><span class="dn">Toplam aylık gider</span><span class="dv">${fmtTL(ayGid)}</span><span class="dv2">${Math.round(ayGid/eurTL)} €</span></div>`;
+    `<div class="drow tot"><span class="dn">Toplam aylık gider</span><span class="dv">${fmtTL(ayGid)}</span><span class="dv2">${Math.round(ayGid/(eurTL>5?eurTL:42))} €</span></div>`;
 
   // Geri dönüş — makine bedeli ne zaman işletme kârıyla karşılanır?
   const aylıkFazla = ayGel - ayGid;  // aylık net kâr (makine hariç)
