@@ -732,7 +732,7 @@ nav{
 .mwrap{position:relative;width:100%;max-width:500px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;z-index:1}
 .mimg{width:100%;height:100%;object-fit:contain;transition:opacity .25s,transform .25s;filter:drop-shadow(0 20px 60px rgba(0,0,0,.9))}
 .mimg.fade{opacity:0;transform:scale(.97)}
-.foam-cv{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s}
+.foam-cv{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;z-index:2}
 .foam-cv.show{opacity:1}
 .foam-strip{width:100%;max-width:500px;border-radius:8px;height:38px;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:600;letter-spacing:.5px;position:relative;overflow:hidden;z-index:1}
 .foam-strip.show{display:flex}
@@ -991,7 +991,7 @@ nav{
     </div>
     <div class="mwrap">
       <img class="mimg" id="mimg" src="" alt="M'WASH2">
-      <canvas class="foam-cv" id="fc" width="500" height="500"></canvas>
+      <canvas class="foam-cv" id="fc" width="500" height="500" style="width:100%;height:100%;border-radius:0"></canvas>
     </div>
     <div class="foam-strip" id="fstrip"></div>
     <div class="chips">
@@ -1339,6 +1339,10 @@ function setFoam(f,lbl){
   const fs=document.getElementById('fstrip'),cfg=FC[f];
   if(cfg&&cfg.t){fs.classList.add('show');fs.style.background=cfg.bg;fs.style.color=cfg.c;fs.textContent=cfg.t;}
   else fs.classList.remove('show');
+  // Glow border on machine wrap
+  const mw=document.getElementById('mimg');
+  const glows={wf:'0 0 30px rgba(0,180,216,.5)',col:'0 0 30px rgba(255,100,0,.5)',wax:'0 0 30px rgba(245,200,20,.5)',none:'none'};
+  mw.style.filter='drop-shadow(0 20px 60px rgba(0,0,0,.9))'+(f!=='none'?' drop-shadow('+glows[f]+')':'');
   drawFoam();
 }
 function drawM(){
@@ -1353,9 +1357,9 @@ function drawFoam(){
   ctx.clearRect(0,0,cv.width,cv.height);cv.classList.remove('show');
   if(curF==='none')return;cv.classList.add('show');
   const g=ctx.createLinearGradient(0,0,cv.width,0);
-  ({wf:[['rgba(0,78,140,.16)',0],['rgba(0,180,216,.20)',.5],['rgba(144,224,239,.13)',1]],
-    col:[['rgba(232,0,28,.12)',0],['rgba(255,140,0,.10)',.33],['rgba(0,200,83,.10)',.66],['rgba(123,47,247,.12)',1]],
-    wax:[['rgba(245,230,66,.18)',0],['rgba(255,247,192,.13)',.5],['rgba(245,230,66,.18)',1]]
+  ({wf:[['rgba(0,100,200,.35)',0],['rgba(0,180,216,.45)',.5],['rgba(144,224,239,.30)',1]],
+    col:[['rgba(232,0,28,.30)',0],['rgba(255,140,0,.28)',.33],['rgba(0,200,83,.25)',.66],['rgba(123,47,247,.30)',1]],
+    wax:[['rgba(245,200,20,.38)',0],['rgba(255,247,100,.30)',.5],['rgba(245,200,20,.38)',1]]
   }[curF]||[]).forEach(([c,s])=>g.addColorStop(s,c));
   ctx.fillStyle=g;ctx.fillRect(0,0,cv.width,cv.height);
 }
@@ -1416,20 +1420,25 @@ function setProg(n){
   recalc();
 }
 
+function getVal(id, fallback){
+  const v = parseFloat(document.getElementById(id).value);
+  // 0 geçerli değer — sadece boş veya NaN ise fallback kullan
+  return (document.getElementById(id).value.trim()==='' || isNaN(v)) ? fallback : v;
+}
 function recalc(){
   const p=PROGS[curP];
 
-  // ₺ giriş alanları
-  const el   = parseFloat(document.getElementById('i-el').value)  ||4.5;
-  const suTon= parseFloat(document.getElementById('i-su').value)  ||25;
-  const arac = parseFloat(document.getElementById('i-arac').value)||50;
-  const ucr  = parseFloat(document.getElementById('i-ucr').value) ||120;
+  // ₺ giriş — 0 geçerli değer
+  const el    = getVal('i-el',   4.5);
+  const suTon = getVal('i-su',   25);
+  const arac  = getVal('i-arac', 50);
+  const ucr   = getVal('i-ucr',  120);
 
-  // € giriş alanları — TL'ye çevir
-  const makEUR  = parseFloat(document.getElementById('i-mak').value)  ||22000;
-  const kopEUR  = parseFloat(document.getElementById('i-kop').value)  ||4.5;
-  const cilEUR  = parseFloat(document.getElementById('i-cil').value)  ||6.0;
-  const bakimEUR= parseFloat(document.getElementById('i-bakim').value)||1200;
+  // € giriş — 0 geçerli değer
+  const makEUR   = getVal('i-mak',   22000);
+  const kopEUR   = getVal('i-kop',   4.5);
+  const cilEUR   = getVal('i-cil',   6.0);
+  const bakimEUR = getVal('i-bakim', 0);   // bakım için varsayılan 0
 
   const makTL   = makEUR   * eurTL;
   const kopTL   = kopEUR   * eurTL;   // €/L → ₺/L
