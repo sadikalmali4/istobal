@@ -916,6 +916,7 @@ nav{
 
 /* ═══ MAP ═══ */
 #page-map .map-wrap{display:flex;flex-direction:column;height:calc(100vh - 52px)}
+#map{flex:1;min-height:400px;z-index:1}
 .map-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .map-ttl{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;white-space:nowrap;flex-shrink:0}
 .map-note{font-size:10px;color:var(--muted);flex:1}
@@ -923,7 +924,7 @@ nav{
 .leg-item{display:flex;align-items:center;gap:4px}
 .leg-dot{width:10px;height:10px;border-radius:50%}
 #map{flex:1;min-height:0}
-.map-panel{position:absolute;top:16px;right:12px;z-index:800;background:rgba(8,8,8,.94);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:9px;padding:12px 14px;min-width:170px;max-height:calc(100vh - 130px);overflow-y:auto}
+.map-panel{position:absolute;top:16px;right:12px;z-index:900;background:rgba(8,8,8,.94);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:9px;padding:12px 14px;min-width:170px;max-height:calc(100vh - 130px);overflow-y:auto}
 .map-panel h4{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px}
 .pi{display:flex;align-items:center;padding:3px 0;font-size:11px;gap:6px;border-bottom:1px solid rgba(255,255,255,.03)}
 .pi:last-child{border:none}
@@ -1228,8 +1229,8 @@ nav{
       <div class="leg-item"><div class="leg-dot" style="background:#E8001C;opacity:.28"></div>1–9</div>
     </div>
   </div>
-  <div style="position:relative;flex:1;display:flex;flex-direction:column">
-    <div id="map"></div>
+  <div style="position:relative;flex:1;display:flex;flex-direction:column;min-height:400px">
+    <div id="map" style="flex:1;min-height:400px"></div>
     <div class="map-panel">
       <h4>İl Sıralaması</h4>
       <div id="mpanel"></div>
@@ -1595,8 +1596,8 @@ function recalc(){
 let mMap,mLyr;
 function initMap(){
   mMap=L.map('map',{center:[39.0,35.5],zoom:6});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© OpenStreetMap contributors',maxZoom:10,minZoom:5
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap © CARTO',maxZoom:18,minZoom:4
   }).addTo(mMap);
   mLyr=L.layerGroup().addTo(mMap);
   const sorted=[...PROVINCES].sort((a,b)=>b.count-a.count);
@@ -1643,7 +1644,7 @@ function go(id,btn){
   document.getElementById('page-'+id).classList.add('on');
   if(btn)btn.classList.add('on');
   else document.querySelectorAll('.ntab').forEach(t=>{if(t.onclick&&t.onclick.toString().includes("'"+id+"'"))t.classList.add('on');});
-  if(id==='map'&&!mapDone){mapDone=true;setTimeout(initMap,80);}
+  if(id==='map'){if(!mapDone){mapDone=true;setTimeout(initMap,200);}else{setTimeout(()=>mMap&&mMap.invalidateSize(),100);}}
   if(id==='dash')setTimeout(initDash,60);
   if(id==='models')buildModels();
   if(id==='cost')setTimeout(()=>setProg(curP),60);
@@ -1653,440 +1654,597 @@ function go(id,btn){
 
 /* === TEKLİF === */
 const MODEL_INFO = {
-  mwash2: {name:"M'WASH 2", sub:'Rollover · Binek & Hafif Ticari', color:'#C8102E', hasColor:true, hasCelik:false},
-  tir:    {name:'TIR Yıkama', sub:'Rollover · Ağır Vasıta', color:'#F59E0B', hasColor:false, hasCelik:false},
-  otobus: {name:'Otobüs Yıkama', sub:'Rollover · Toplu Taşıma', color:'#8B5CF6', hasColor:false, hasCelik:false},
-  tunel:  {name:'TWASHpro Tünel', sub:'Konveyörlü · Yüksek Kapasite', color:'#10B981', hasColor:false, hasCelik:true},
+  mwash2:{
+    name:"M'WASH 2", sub:'Rollover · Binek & Hafif Ticari',
+    color:'#C8102E', hasColor:true, hasCelik:false,
+    specs:[
+      {cat:'Boyutlar & Kapasite', items:[
+        ['Yıkama Genişliği','2.300 – 2.900 mm'],['Yıkama Yüksekliği','2.300 – 2.900 mm'],
+        ['Ray Uzunluğu','9.000 – 11.000 mm'],['Araç Başı Süre','3 – 4 dakika'],
+        ['Günlük Maks. Kapasite','120 araç/gün'],['Fırça Değişimi','Her 35.000 yıkamada'],
+      ]},
+      {cat:'Tüketim Değerleri (Kılavuz S.17)', items:[
+        ['Su – Program 1','123 L/araç'],['Su – Program 2','104 L/araç'],
+        ['Su – Program 3','201 L/araç'],['Elektrik – Prog. 1','0,727 kWh/araç'],
+        ['Elektrik – Prog. 2','0,714 kWh/araç'],['Elektrik – Prog. 3','0,980 kWh/araç'],
+      ]},
+      {cat:'Teknik Özellikler', items:[
+        ['Fırça Sayısı','3 dikey + 1 yatay'],['Kontrol Sistemi','Smartwash dokunmatik'],
+        ['Gürültü Seviyesi','76 – 80 dB'],['Köpük Sistemi','Standart / Şelale / Renkli / Cila'],
+        ['Renk Seçenekleri','7 renk – kişiselleştirilebilir'],['Sertifikalar','CE · ISO 9001'],
+      ]},
+    ],
+    highlights:['3 dikey + 1 yatay fırça sistemi','7 renk seçeneği — bayrak uyumlu',
+      'Smartwash dokunmatik kontrol','Şelale köpük, cila opsiyonu',
+      'Tam otomatik boyut algılama','CE ve ISO 9001 sertifikalı','24 saat servis garantisi'],
+  },
+  tir:{
+    name:'TIR Yıkama', sub:'Rollover · Ağır Vasıta',
+    color:'#F59E0B', hasColor:false, hasCelik:false,
+    specs:[
+      {cat:'Boyutlar & Kapasite', items:[
+        ['Maks. Araç Yüksekliği','4.800 mm'],['Maks. Araç Genişliği','2.800 mm'],
+        ['Araç Başı Süre','5 – 8 dakika'],['TIR Uzunluğu','Tüm standart uzunluklar'],
+        ['Fırça Sistemi','1–2 dikey + 1 yatay'],['Fırça Değişimi','Periyodik bakımda'],
+      ]},
+      {cat:'Teknik Özellikler', items:[
+        ['Kontrol','Dijital panel'],['Ön Yıkama','Yüksek basınçlı HP'],
+        ['Su Tüketimi','300 – 500 L/araç'],['Köpük Sistemi','Mevcut'],
+        ['Uyumluluk','Tüm TIR tipleri'],['Sertifikalar','CE · ISO 9001'],
+      ]},
+    ],
+    highlights:['TIR, kamyon ve semi-treyler uyumlu','Yükseklik: 4.800 mm ye kadar',
+      'Tek veya çift fırça konfigürasyonu','Konvoy yıkama desteği',
+      'Yüksek basınçlı ön yıkama','24 saat servis garantisi','1 yıl fabrika garantisi'],
+  },
+  otobus:{
+    name:'Otobüs Yıkama', sub:'Rollover · Toplu Taşıma',
+    color:'#8B5CF6', hasColor:false, hasCelik:false,
+    specs:[
+      {cat:'Boyutlar & Kapasite', items:[
+        ['Maks. Araç Yüksekliği','4.200 mm'],['Maks. Araç Genişliği','2.600 mm'],
+        ['Araç Başı Süre','4 – 6 dakika'],['Araç Uzunluğu','Tüm standart uzunluklar'],
+        ['Fırça Sistemi','2 dikey + 1 yatay'],['Su Tüketimi','200 – 350 L/araç'],
+      ]},
+      {cat:'Teknik Özellikler', items:[
+        ['Kontrol','Dijital panel'],['Ön Yıkama','Yüksek basınçlı HP'],
+        ['Köpük Sistemi','Mevcut'],['Uyumluluk','Solo & articulated otobüs'],
+        ['Garanti','1 yıl fabrika garantisi'],['Sertifikalar','CE · ISO 9001'],
+      ]},
+    ],
+    highlights:['Şehir otobüsü ve turistik araç uyumlu','Yükseklik: 4.200 mm ye kadar',
+      'Hızlı döngü — yüksek hat kapasitesi','Tüm otobüs tipleri dahil',
+      'Yüksek basınçlı ön yıkama','24 saat servis garantisi','1 yıl fabrika garantisi'],
+  },
+  tunel:{
+    name:'TWASHpro Tünel', sub:'Konveyörlü · Yüksek Kapasite',
+    color:'#10B981', hasColor:false, hasCelik:true,
+    specs:[
+      {cat:'Boyutlar & Kapasite', items:[
+        ['Tünel Uzunluğu','17 – 25 metre'],['Kapasite','50 – 60 araç/saat'],
+        ['Araç Başı Süre','90 – 120 saniye'],['Araç Genişliği','2.500 mm ye kadar'],
+        ['Araç Yüksekliği','Ayarlanabilir'],['Konveyör','4 inç zincir sistemi'],
+      ]},
+      {cat:'Yıkama Sistemi', items:[
+        ['Ön Yıkama','5.5kW pompa, 15bar, 120L/dk'],['Köpük Kemeri','Infinity Mousse Arch'],
+        ['Fırçalar','2 dikey + 1 yatay + 2 adjoining 80cm'],['Yan Fırçalar','Rocker side brushes'],
+        ['Altlık Yıkama','Underchassis wash'],['Cila Kemeri','Wax/Superwax arch'],
+      ]},
+      {cat:'Kurutma & Kontrol', items:[
+        ['Kurutucu','30kW — 2x7.5 yan + 2x7.5 üst'],['Kurutma Difüzörü','Mevcut'],
+        ['Tekstil Kurutma','Döner tekstil şerit sistemi'],['Kontrol Paneli','Dijital (giriş + çıkış)'],
+        ['Güvenlik','Anti-çarpışma + yükseklik sistemi'],['Fotoseller','Giriş ve çıkış fotoselleri'],
+      ]},
+    ],
+    highlights:['50-60 araç/saat kapasite (19m model)','4 inç konveyör — otomatik yağlama',
+      'Infinity Mousse Arch — şelale köpük','Rocker yan fırçalar + altlık yıkama',
+      '30kW kurutucu sistemi','Dijital kontrol + anti-çarpışma','CE sertifikalı güvenlik'],
+  },
 };
 
 const CHECKS = [
-  {main:'Seçilen model ve opsiyonlar', sub:'Model, renk, köpük sistemi onaylandı'},
-  {main:'Fiyat ve para birimi', sub:'Teklif fiyatı ve ödeme şartları kabul edildi'},
-  {main:'Ödeme planı (%50 + %50)', sub:'Sipariş onayında %50, sevkiyatta %50'},
-  {main:'Teslimat koşulları', sub:'12–14 hafta, İstanbul Gümrüğünde teslim'},
-  {main:'Teknik altyapı sorumluluğu', sub:'Elektrik, su, hava temini müşteriye aittir'},
-  {main:'İnşaat ve zemin hazırlığı', sub:'Tüm inşaat işleri müşteri sorumluluğundadır'},
-  {main:'Teknik ekip masrafları', sub:'Vize, uçak, 5 yıldız konaklama müşteriye aittir'},
-  {main:'Garanti koşulları', sub:'1 yıl garanti, 24 saat müdahale taahhüdü'},
-  {main:'Çelik yapı / muhafaza', sub:'Teklife dahil olmadığı anlaşıldı (varsa ayrı fiyat)'},
-  {main:'Teklif geçerlilik süresi', sub:'Verilen süre içinde sipariş verilmesi şartı'},
+  {cat:'Ürün & Sipariş', items:[
+    {t:'Seçilen model, renk ve opsiyonlar onaylandı', s:'Model, renk kodu, köpük/cila sistemi seçimi'},
+    {t:'Teklif fiyatı ve para birimi kabul edildi', s:'Teklifte belirtilen tutar ve kur anlaşıldı'},
+  ]},
+  {cat:'Ödeme & Teslimat', items:[
+    {t:'Ödeme planı kabul edildi (%50 + %50)', s:'Sipariş onayında %50 avans, fabrikadan sevkiyatta %50'},
+    {t:'Teslimat süresi onaylandı (12–14 hafta)', s:'Üretim ve sevkiyat süresi anlaşıldı'},
+    {t:'Teslimat noktası onaylandı (İstanbul Gümrüğü)', s:'Gümrük sonrası nakliye müşteri sorumluluğundadır'},
+    {t:'Nakliye ve gümrük işlemleri müşteriye aittir', s:'İstanbul Gümrüğü sonrası tüm masraflar müşteriye aittir'},
+  ]},
+  {cat:'Teknik Altyapı (Müşteri Taahhüdü)', items:[
+    {t:'Elektrik altyapısı müşteri tarafından hazırlanacak', s:'Regüle elektrik, uygun voltaj ve güç kapasitesi'},
+    {t:'Su tesisatı müşteri tarafından hazırlanacak', s:'5–7 bar, yüksek akışlı su hattı'},
+    {t:'Hava hattı müşteri tarafından hazırlanacak', s:'6–8 bar, kuru ve temiz basınçlı hava'},
+    {t:'İnşaat ve zemin hazırlığı müşteriye aittir', s:'Makine için uygun zemin, drenaj ve çevre düzenlemesi'},
+  ]},
+  {cat:'Teknik Ekip & Garanti', items:[
+    {t:'Teknik ekip masrafları müşteri tarafından karşılanacak', s:'Vize, uçak bileti, 5 yıldız otel ve 3 öğün yemek'},
+    {t:'1 yıl garanti koşulları okundu ve kabul edildi', s:'Teslim tarihinden itibaren 1 yıl, 24 saat müdahale taahhüdü'},
+    {t:'Çelik yapı / muhafazanın ayrı fiyatlandırıldığı anlaşıldı', s:'Ana makine fiyatına dahil değildir (tünelde ayrıca belirtilir)'},
+  ]},
 ];
 
 function modelChange(){
-  const m = document.getElementById('t-model').value;
-  const info = MODEL_INFO[m];
-  // Renk sadece mwash2'de
-  document.getElementById('t-color-row').style.display = info.hasColor ? 'block' : 'none';
-  // Çelik sadece tünelde
-  document.getElementById('t-celik-row').style.display = info.hasCelik ? 'block' : 'none';
+  const m=document.getElementById('t-model').value;
+  const info=MODEL_INFO[m];
+  document.getElementById('t-color-row').style.display=info.hasColor?'block':'none';
+  document.getElementById('t-celik-row').style.display=info.hasCelik?'block':'none';
   prevUpdate();
 }
 
-function gv(id){ return document.getElementById(id)?.value||''; }
+function gv(id){return document.getElementById(id)?.value||'';}
 
-function fmtPara(val, cur){
-  if(!val || isNaN(val)) return '—';
-  const n = parseFloat(val);
-  const sym = cur==='EUR'?'€':cur==='USD'?'$':'₺';
+function fmtPara(val,cur){
+  if(!val||isNaN(val))return '—';
+  const n=parseFloat(val);
+  const sym=cur==='EUR'?'€':cur==='USD'?'$':'₺';
   return n.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' '+sym;
 }
 
 function prevUpdate(){
-  const model = gv('t-model');
-  const info = MODEL_INFO[model];
-  const cur = gv('t-cur')||'EUR';
-  const musteri = gv('t-musteri')||'—';
-  const yetkili = gv('t-yetkili')||'—';
-  const teslimat = gv('t-teslimat')||'—';
-  const gecerli = gv('t-gecerli')||'30 gün';
-  const fiyat = parseFloat(gv('t-fiyat'))||0;
-  const celik = parseFloat(gv('t-celik'))||0;
-  const indirim = parseFloat(gv('t-indirim'))||0;
-  const toplam = fiyat + celik - indirim;
-  const renk = gv('t-renk')||'Kırmızı';
-  const opsiyon = gv('t-opsiyon')||'Standart';
-  const alga = gv('t-alga')||'ALGA Mümessillik';
+  const model=gv('t-model'), info=MODEL_INFO[model];
+  const cur=gv('t-cur')||'EUR';
+  const musteri=gv('t-musteri')||'—';
+  const yetkili=gv('t-yetkili')||'—';
+  const teslimat=gv('t-teslimat')||'—';
+  const gecerli=gv('t-gecerli')||'30 gün';
+  const fiyat=parseFloat(gv('t-fiyat'))||0;
+  const celik=parseFloat(gv('t-celik'))||0;
+  const indirim=parseFloat(gv('t-indirim'))||0;
+  const toplam=fiyat+celik-indirim;
+  const renk=gv('t-renk')||'Kırmızı';
+  const opsiyon=gv('t-opsiyon')||'Standart';
+  const alga=gv('t-alga')||'ALGA Mümessillik';
+  const tarihRaw=gv('t-tarih');
+  const tarihStr=tarihRaw?new Date(tarihRaw).toLocaleDateString('tr-TR'):new Date().toLocaleDateString('tr-TR');
+  const autoNo='TKL-'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'')+'-'+model.slice(0,3).toUpperCase();
 
-  // Tarih
-  const tarihRaw = gv('t-tarih');
-  const tarihStr = tarihRaw ? new Date(tarihRaw).toLocaleDateString('tr-TR') : new Date().toLocaleDateString('tr-TR');
+  document.getElementById('pv-no').textContent=gv('t-no')||autoNo;
+  document.getElementById('pv-musteri').textContent=musteri;
+  document.getElementById('pv-yetkili').textContent=yetkili;
+  document.getElementById('pv-tarih').textContent=tarihStr;
+  document.getElementById('pv-teslimat').textContent=teslimat;
+  document.getElementById('pv-gecerli').textContent=gecerli;
+  document.getElementById('pv-machine').textContent=info.name;
+  document.getElementById('pv-badge').textContent=info.sub;
+  document.getElementById('pv-badge').style.background=info.color;
+  document.getElementById('pv-opsiyon').textContent=opsiyon+(info.hasColor?' · Renk: '+renk:'');
+  document.getElementById('prev-model-badge').textContent=info.name;
+  document.getElementById('pv-fiyat').textContent=fiyat>0?fmtPara(fiyat,cur):'—';
+  document.getElementById('pv-gecerli-note').textContent='Bu fiyat '+gecerli+' geçerlidir.';
+  document.getElementById('pv-musteri-sig').textContent=musteri+' · '+tarihStr;
+  document.getElementById('pv-alga-sig').textContent=alga;
 
-  // Teklif no
-  const autoNo = gv('t-no') || 'TKL-' + new Date().toLocaleDateString('tr-TR').replace(/\./g,'') + '-' + model.slice(0,3).toUpperCase();
-  document.getElementById('t-no').placeholder = autoNo;
+  const celikRow=document.getElementById('pv-celik-row');
+  celikRow.style.display=celik>0?'flex':'none';
+  document.getElementById('pv-celik-val').textContent=fmtPara(celik,cur);
+  const indRow=document.getElementById('pv-indirim-row');
+  indRow.style.display=indirim>0?'flex':'none';
+  document.getElementById('pv-indirim-val').textContent='-'+fmtPara(indirim,cur);
+  document.getElementById('pv-toplam').textContent=toplam>0?fmtPara(toplam,cur):'—';
 
-  document.getElementById('pv-no').textContent = gv('t-no')||autoNo;
-  document.getElementById('pv-musteri').textContent = musteri;
-  document.getElementById('pv-yetkili').textContent = yetkili;
-  document.getElementById('pv-tarih').textContent = tarihStr;
-  document.getElementById('pv-teslimat').textContent = teslimat;
-  document.getElementById('pv-gecerli').textContent = gecerli;
-  document.getElementById('pv-machine').textContent = info.name;
-  document.getElementById('pv-badge').textContent = info.sub;
-  document.getElementById('pv-badge').style.background = info.color;
-  document.getElementById('pv-opsiyon').textContent = opsiyon + (info.hasColor ? ' · Renk: '+renk : '');
-  document.getElementById('prev-model-badge').textContent = info.name;
-  document.getElementById('pv-fiyat').textContent = fiyat>0?fmtPara(fiyat,cur):'—';
-  document.getElementById('pv-gecerli-note').textContent = 'Bu fiyat '+gecerli+' geçerlidir.';
-  document.getElementById('pv-musteri-sig').textContent = musteri + ' · ' + tarihStr;
-  document.getElementById('pv-alga-sig').textContent = alga;
-
-  // Çelik
-  const celikRow = document.getElementById('pv-celik-row');
-  celikRow.style.display = celik>0?'flex':'none';
-  document.getElementById('pv-celik-val').textContent = fmtPara(celik,cur);
-
-  // İndirim
-  const indRow = document.getElementById('pv-indirim-row');
-  indRow.style.display = indirim>0?'flex':'none';
-  document.getElementById('pv-indirim-val').textContent = '-'+fmtPara(indirim,cur);
-
-  // Toplam
-  document.getElementById('pv-toplam').textContent = toplam>0?fmtPara(toplam,cur):'—';
-
-  // Checkboxlar
-  document.getElementById('pv-checks').innerHTML = CHECKS.map(c=>`
-    <div class="cp-item">
-      <div class="cp-box"></div>
-      <div class="cp-text">
-        <span class="cp-main">${c.main}</span>
-        <span class="cp-sub">${c.sub}</span>
-      </div>
+  // Tikli checkboxlar önizleme
+  document.getElementById('pv-checks').innerHTML=CHECKS.map(cat=>`
+    <div style="margin-bottom:8px">
+      <div style="font-size:9px;font-weight:700;color:#C8102E;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;padding:2px 4px;background:#FCEBEB;border-radius:3px">${cat.cat}</div>
+      ${cat.items.map(c=>`<div class="cp-item">
+        <div class="cp-box"></div>
+        <div class="cp-text"><span class="cp-main">${c.t}</span><span class="cp-sub">${c.s}</span></div>
+      </div>`).join('')}
     </div>`).join('');
 }
 
-/* === PDF OLUŞTURMA (jsPDF) === */
 function buildPDF(type){
-  // jsPDF yüklü değilse yükle
-  if(typeof window.jspdf === 'undefined'){
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    s.onload = () => generatePDF(type);
+  if(typeof window.jspdf==='undefined'){
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload=()=>generatePDF(type);
     document.head.appendChild(s);
-  } else {
-    generatePDF(type);
-  }
+  }else{generatePDF(type);}
 }
 
 function generatePDF(type){
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const W=210, H=297;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,H=297;
+  const model=gv('t-model'), info=MODEL_INFO[model];
+  const cur=gv('t-cur')||'EUR';
+  const musteri=gv('t-musteri')||'[Müşteri Adı]';
+  const yetkili=gv('t-yetkili')||'[Yetkili]';
+  const teslimat=gv('t-teslimat')||'[Teslimat]';
+  const gecerli=gv('t-gecerli')||'30 gün';
+  const fiyat=parseFloat(gv('t-fiyat'))||0;
+  const celik=parseFloat(gv('t-celik'))||0;
+  const indirim=parseFloat(gv('t-indirim'))||0;
+  const toplam=fiyat+celik-indirim;
+  const renk=gv('t-renk')||'Kırmızı';
+  const opsiyon=gv('t-opsiyon')||'Standart';
+  const not=gv('t-not')||'';
+  const alga=gv('t-alga')||'ALGA Mümessillik';
+  const tarihRaw=gv('t-tarih');
+  const tarih=tarihRaw?new Date(tarihRaw).toLocaleDateString('tr-TR'):new Date().toLocaleDateString('tr-TR');
+  const teklifNo=gv('t-no')||('TKL-'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'')+'-'+model.slice(0,3).toUpperCase());
+  const sym=cur==='EUR'?'€':cur==='USD'?'$':'₺';
 
-  const model = gv('t-model');
-  const info = MODEL_INFO[model];
-  const cur = gv('t-cur')||'EUR';
-  const musteri = gv('t-musteri')||'[Müşteri Adı]';
-  const yetkili = gv('t-yetkili')||'[Yetkili]';
-  const teslimat = gv('t-teslimat')||'[Teslimat]';
-  const gecerli = gv('t-gecerli')||'30 gün';
-  const fiyat = parseFloat(gv('t-fiyat'))||0;
-  const celik = parseFloat(gv('t-celik'))||0;
-  const indirim = parseFloat(gv('t-indirim'))||0;
-  const toplam = fiyat+celik-indirim;
-  const renk = gv('t-renk')||'Kırmızı';
-  const opsiyon = gv('t-opsiyon')||'Standart';
-  const not = gv('t-not')||'';
-  const alga = gv('t-alga')||'ALGA Mümessillik';
-  const tarihRaw = gv('t-tarih');
-  const tarih = tarihRaw ? new Date(tarihRaw).toLocaleDateString('tr-TR') : new Date().toLocaleDateString('tr-TR');
-  const teklifNo = gv('t-no') || ('TKL-'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'')+'-'+model.slice(0,3).toUpperCase());
-  const sym = cur==='EUR'?'€':cur==='USD'?'$':'₺';
+  let pageNum=1;
 
-  function fmtN(n){ return n>0?n.toLocaleString('tr-TR',{minimumFractionDigits:2})+ ' '+sym : '—'; }
+  function fmtN(n){return n>0?n.toLocaleString('tr-TR',{minimumFractionDigits:2})+' '+sym:'—';}
 
-  function header(doc, pg){
-    // Dark header
+  function drawHeader(){
     doc.setFillColor(26,26,26);
     doc.rect(0,0,W,28,'F');
-    // Red line
     doc.setFillColor(200,16,46);
     doc.rect(0,28,W,1.2,'F');
-    // ISTOBAL text
     doc.setFont('helvetica','bold');
-    doc.setFontSize(16);
-    doc.setTextColor(200,16,46);
+    doc.setFontSize(16); doc.setTextColor(200,16,46);
     doc.text('ISTOBAL',14,11);
     doc.setFont('helvetica','normal');
-    doc.setFontSize(7);
-    doc.setTextColor(180,180,180);
+    doc.setFontSize(7); doc.setTextColor(180,180,180);
     doc.text('Vehicle Wash & Care',14,16);
-    // ALGA right
     doc.setFont('helvetica','bold');
-    doc.setFontSize(9);
-    doc.setTextColor(123,192,67);
-    doc.text('YETKİLİ SATICI',W-14,10,{align:'right'});
+    doc.setFontSize(9); doc.setTextColor(123,192,67);
+    doc.text('YETKILI SATICI',W-14,10,{align:'right'});
     doc.setFont('helvetica','normal');
-    doc.setFontSize(7);
-    doc.setTextColor(150,150,150);
-    doc.text('ALGA Mümessillik',W-14,15,{align:'right'});
-    doc.text('Türkiye · Irak · Suriye · KKTC · Kosova',W-14,20,{align:'right'});
-    // Footer
+    doc.setFontSize(7); doc.setTextColor(150,150,150);
+    doc.text('ALGA Mumessillik',W-14,15,{align:'right'});
+    doc.text('Turkiye - Irak - Suriye - KKTC - Kosova',W-14,20,{align:'right'});
     doc.setFillColor(26,26,26);
     doc.rect(0,H-14,W,14,'F');
     doc.setFillColor(200,16,46);
     doc.rect(0,H-14,W,0.8,'F');
     doc.setFont('helvetica','normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(120,120,120);
-    doc.text('ALGA Mümessillik ve Dış Ticaret A.Ş.  |  Tel: +90 533 276 13 09  |  istobal.com',14,H-8);
-    doc.text('Sayfa '+pg,W-14,H-8,{align:'right'});
+    doc.setFontSize(6.5); doc.setTextColor(120,120,120);
+    doc.text('ALGA Mumessillik ve Dis Ticaret A.S.  |  Tel: +90 533 276 13 09  |  istobal.com',14,H-8);
+    doc.text('Sayfa '+pageNum,W-14,H-8,{align:'right'});
     doc.setTextColor(80,80,80);
-    doc.text('Türkiye · Irak · Suriye · KKTC · Kosova',W/2,H-4,{align:'center'});
+    doc.text('Turkiye - Irak - Suriye - KKTC - Kosova',W/2,H-4,{align:'center'});
   }
 
-  function infoTable(doc, y, rows){
-    const colW=[35,55,35,55];
+  function newPage(){
+    doc.addPage(); pageNum++;
+    drawHeader();
+    return 34;
+  }
+
+  function checkY(y,needed){return y+needed>H-18?newPage():y;}
+
+  function infoRow(doc,y,rows){
     rows.forEach((row,ri)=>{
-      const bg = ri%2===0?[255,255,255]:[248,248,248];
-      doc.setFillColor(...bg);
-      doc.rect(14,y,180,7,'F');
-      doc.setDrawColor(220,220,220);
-      doc.rect(14,y,180,7,'S');
+      doc.setFillColor(ri%2===0?255:248,ri%2===0?255:248,ri%2===0?255:248);
+      doc.rect(14,y,182,7,'F');
+      doc.setDrawColor(220,220,220); doc.rect(14,y,182,7,'S');
       let x=14;
+      const cw=[34,57,34,57];
       row.forEach((cell,ci)=>{
         if(ci%2===0){doc.setFont('helvetica','bold');doc.setTextColor(50,50,50);}
         else{doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);}
         doc.setFontSize(8);
-        doc.text(cell,x+2,y+4.8);
-        x+=colW[ci];
+        doc.text(String(cell),x+2,y+4.8);
+        x+=cw[ci];
       });
       y+=7;
     });
     return y;
   }
 
-  if(type==='teklif'){
-    // ── SAYFA 1: TEKLİF ──
-    header(doc,1);
-    let y=34;
-
-    // Teklif bilgileri
-    doc.setFont('helvetica','bold'); doc.setFontSize(14);
-    doc.setTextColor(200,16,46);
-    doc.text('ÖN TEKLİF',14,y); y+=7;
-
-    y = infoTable(doc, y, [
-      ['Teklif No',teklifNo,'Tarih',tarih],
-      ['Müşteri',musteri,'Yetkili',yetkili],
-      ['Para Birimi',cur,'Teslimat',teslimat],
-      ['Geçerlilik',gecerli,'Hazırlayan',alga],
-    ]); y+=5;
-
-    // Makine başlığı
-    doc.setFillColor(26,26,26);
-    doc.rect(14,y,180,12,'F');
-    doc.setFillColor(200,16,46);
-    doc.rect(14,y+12,180,1.2,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(14);
-    doc.setTextColor(255,255,255);
-    doc.text(info.name,18,y+8);
-    doc.setFont('helvetica','normal'); doc.setFontSize(8);
-    doc.setTextColor(180,180,180);
-    doc.text(info.sub,W-16,y+8,{align:'right'});
-    y+=16;
-
-    // Özellikler: renk & opsiyon
-    doc.setFont('helvetica','normal'); doc.setFontSize(9);
-    doc.setTextColor(80,80,80);
-    if(info.hasColor) doc.text('Renk: '+renk+'  |  Opsiyon: '+opsiyon, 14, y+5);
-    else doc.text('Opsiyon: '+opsiyon, 14, y+5);
-    y+=12;
-
-    // Fiyat tablosu
+  function sectionTitle(y,text){
     doc.setFont('helvetica','bold'); doc.setFontSize(11);
     doc.setTextColor(200,16,46);
-    doc.text('Fiyatlandırma',14,y); y+=5;
-    doc.setDrawColor(220,220,220);
-    doc.line(14,y,194,y); y+=4;
+    doc.text(text,14,y); y+=4;
+    doc.setDrawColor(200,16,46); doc.setLineWidth(0.5);
+    doc.line(14,y,194,y); doc.setLineWidth(0.2); y+=4;
+    return y;
+  }
 
-    const priceRows=[];
-    priceRows.push([info.name+' (Ana Makine)', fmtN(fiyat)]);
-    if(celik>0) priceRows.push(['Çelik Yapı & Muhafaza', fmtN(celik)]);
-    if(indirim>0) priceRows.push(['İNDİRİM', '-'+fmtN(indirim)]);
+  function catHeader(y,text){
+    doc.setFillColor(200,16,46);
+    doc.rect(14,y,182,7,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+    doc.setTextColor(255,255,255);
+    doc.text(text,18,y+4.8);
+    return y+7;
+  }
 
-    priceRows.forEach((r,ri)=>{
+  function specRows(y,items){
+    for(let i=0;i<items.length;i+=2){
+      const bg=Math.floor(i/2)%2===0?[255,255,255]:[248,248,248];
+      doc.setFillColor(...bg);
+      doc.rect(14,y,182,7,'F');
+      doc.setDrawColor(220,220,220); doc.rect(14,y,182,7,'S');
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(60,60,60);
+      doc.text(items[i][0],18,y+4.8);
+      doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
+      doc.text(items[i][1],58,y+4.8);
+      if(items[i+1]){
+        doc.setFont('helvetica','bold'); doc.setTextColor(60,60,60);
+        doc.text(items[i+1][0],107,y+4.8);
+        doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
+        doc.text(items[i+1][1],147,y+4.8);
+      }
+      y+=7;
+    }
+    return y;
+  }
+
+  // ──────────────────────────────────────────────────
+  if(type==='teklif'){
+    // SAYFA 1
+    drawHeader(); let y=34;
+
+    // Başlık
+    doc.setFillColor(26,26,26);
+    doc.rect(14,y,182,14,'F');
+    doc.setFillColor(200,16,46);
+    doc.rect(14,y+14,182,1.5,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(16);
+    doc.setTextColor(255,255,255);
+    doc.text(info.name,18,y+9);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.setTextColor(180,180,180);
+    doc.text('On Teklif · '+info.sub,18,y+13);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.setTextColor(200,16,46);
+    doc.text('No: '+teklifNo,W-16,y+9,{align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(8);
+    doc.setTextColor(150,150,150);
+    doc.text(tarih,W-16,y+13,{align:'right'});
+    y+=18;
+
+    // Teklif bilgileri
+    y=infoRow(doc,y,[
+      ['Musteri',musteri,'Yetkili',yetkili],
+      ['Para Birimi',cur,'Teslimat',teslimat],
+      ['Gecerlilik',gecerli,'Hazirlayan',alga],
+    ]); y+=5;
+
+    // Seçilen ürün
+    y=sectionTitle(y,'Secilen Urun & Opsiyon');
+    doc.setFillColor(248,248,248);
+    doc.rect(14,y,182,10,'F');
+    doc.setDrawColor(220,220,220); doc.rect(14,y,182,10,'S');
+    doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(26,26,26);
+    doc.text(info.name,18,y+6.5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(100,100,100);
+    const opsText=opsiyon+(info.hasColor?' · Renk: '+renk:'');
+    doc.text(opsText,18,y+9.5);
+    y+=14;
+
+    // Öne çıkan özellikler
+    y=sectionTitle(y,'One Cikan Ozellikler');
+    info.highlights.forEach((h,hi)=>{
+      const bg=hi%2===0?[255,255,255]:[248,248,248];
+      doc.setFillColor(...bg);
+      doc.rect(14,y,182,6.5,'F');
+      doc.setDrawColor(220,220,220); doc.rect(14,y,182,6.5,'S');
+      doc.setFillColor(200,16,46); doc.circle(17.5,y+3.25,1,'F');
+      doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(50,50,50);
+      doc.text(h,21,y+4.3);
+      y+=6.5;
+    }); y+=5;
+
+    // Teknik özellikler — kategorize
+    y=sectionTitle(y,'Teknik Ozellikler');
+    info.specs.forEach(cat=>{
+      y=checkY(y,20);
+      y=catHeader(y,cat.cat);
+      y=checkY(y,cat.items.length*3.5);
+      y=specRows(y,cat.items);
+      y+=2;
+    }); y+=4;
+
+    // Fiyat
+    y=checkY(y,60);
+    y=sectionTitle(y,'Fiyatlandirma');
+    const priceItems=[[info.name+' (Ana Makine)',fmtN(fiyat)]];
+    if(celik>0) priceItems.push(['Celik Yapi & Muhafaza',fmtN(celik)]);
+    if(indirim>0) priceItems.push(['INDIRIM','-'+fmtN(indirim)]);
+
+    priceItems.forEach((r,ri)=>{
+      const isDisc=r[0]==='INDIRIM';
       doc.setFillColor(ri%2===0?255:248,ri%2===0?255:248,ri%2===0?255:248);
-      doc.rect(14,y,180,7,'F');
-      doc.setDrawColor(220,220,220); doc.rect(14,y,180,7,'S');
-      doc.setFont('helvetica',ri===priceRows.length-1&&indirim>0?'bold':'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(ri===priceRows.length-1&&indirim>0?200:60,ri===priceRows.length-1&&indirim>0?16:60,ri===priceRows.length-1&&indirim>0?46:60);
+      doc.rect(14,y,182,7,'F');
+      doc.setDrawColor(220,220,220); doc.rect(14,y,182,7,'S');
+      doc.setFont('helvetica','normal'); doc.setFontSize(9);
+      doc.setTextColor(isDisc?200:60,isDisc?16:60,isDisc?46:60);
       doc.text(r[0],18,y+4.8);
       doc.setFont('helvetica','bold');
       doc.text(r[1],W-16,y+4.8,{align:'right'});
       y+=7;
     });
-
-    // Genel toplam
-    doc.setFillColor(26,26,26);
-    doc.rect(14,y,180,9,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    doc.setTextColor(255,255,255);
-    doc.text('GENEL TOPLAM',18,y+6);
-    doc.text(fmtN(toplam),W-16,y+6,{align:'right'});
+    doc.setFillColor(26,26,26); doc.rect(14,y,182,10,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(255,255,255);
+    doc.text('GENEL TOPLAM',18,y+6.5);
+    doc.text(fmtN(toplam),W-16,y+6.5,{align:'right'});
     y+=13;
-
-    doc.setFont('helvetica','italic'); doc.setFontSize(8);
-    doc.setTextColor(140,140,140);
-    doc.text('Bu fiyat '+gecerli+' geçerlidir.',W-14,y,{align:'right'});
+    doc.setFont('helvetica','italic'); doc.setFontSize(8); doc.setTextColor(140,140,140);
+    doc.text('Bu fiyat '+gecerli+' gecerlidir.',W-14,y,{align:'right'});
     y+=8;
 
     // Koşullar
-    doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    doc.setTextColor(200,16,46);
-    doc.text('Teklif Koşulları',14,y); y+=5;
-    doc.setDrawColor(220,220,220); doc.line(14,y,194,y); y+=4;
-
+    y=checkY(y,70);
+    y=sectionTitle(y,'Teklif Kosullari');
     const conds=[
-      ['Ödeme','%50 sipariş onayında, %50 fabrikadan sevkiyatta'],
-      ['Teslimat','12–14 hafta · İstanbul Gümrüğünde teslim'],
-      ['Altyapı','Regüle elektrik, 5-7 bar su, 6-8 bar kuru hava — müşteri sorumluluğu'],
-      ['İnşaat','Tüm inşaat ve altyapı işleri müşteri sorumluluğundadır'],
-      ['Garanti','1 yıl · Arıza bildiriminden itibaren 24 saat müdahale'],
-      ['Teknik Ekip','Vize, uçak, 5 yıldız konaklama ve yemek müşteri tarafından karşılanır'],
+      ['Odeme','%50 siparis onayinda, %50 fabrikadan sevkiyatta'],
+      ['Teslimat','12-14 hafta · Istanbul Gumrugunde teslim'],
+      ['Altyapi','Regule elektrik, 5-7 bar su, 6-8 bar kuru hava — musteri sorumlulugu'],
+      ['Insaat','Tum insaat ve altyapi isleri musteri sorumluluğundadir'],
+      ['Garanti','1 yil · Ariza bildiriminden itibaren 24 saat mudahale'],
+      ['Teknik Ekip','Vize, ucak, 5 yildiz konaklama ve yemek musteri tarafindan karsilanir'],
     ];
     conds.forEach((c,ci)=>{
       doc.setFillColor(ci%2===0?255:248,ci%2===0?255:248,ci%2===0?255:248);
-      doc.rect(14,y,180,7,'F');
-      doc.setDrawColor(220,220,220); doc.rect(14,y,180,7,'S');
+      doc.rect(14,y,182,7,'F');
+      doc.setDrawColor(220,220,220); doc.rect(14,y,182,7,'S');
       doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(50,50,50);
       doc.text(c[0],18,y+4.8);
       doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
-      doc.text(c[1],58,y+4.8);
+      const lines=doc.splitTextToSize(c[1],130);
+      doc.text(lines[0],55,y+4.8);
       y+=7;
-    });
-    y+=6;
+    }); y+=5;
 
     if(not){
-      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(50,50,50);
-      doc.text('Not:',14,y);
-      doc.setFont('helvetica','italic'); doc.setTextColor(100,100,100);
-      const lines=doc.splitTextToSize(not,170);
-      doc.text(lines,25,y);
-      y+=lines.length*5+4;
+      y=checkY(y,20);
+      doc.setFillColor(248,248,245); doc.rect(14,y,182,14,'F');
+      doc.setDrawColor(200,16,46); doc.rect(14,y,2,14,'F');
+      doc.setDrawColor(220,220,220); doc.rect(14,y,182,14,'S');
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(50,50,50);
+      doc.text('Not:',18,y+5);
+      doc.setFont('helvetica','italic'); doc.setTextColor(80,80,80);
+      const nlines=doc.splitTextToSize(not,168);
+      doc.text(nlines.slice(0,2),28,y+5);
+      y+=17;
     }
 
     // İmza
-    if(y>230){ doc.addPage(); header(doc,2); y=35; }
+    y=checkY(y,42);
     doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(50,50,50);
-    doc.rect(14,y,87,35,'S'); doc.rect(107,y,87,35,'S');
-    doc.setFillColor(245,245,245); doc.rect(14,y,87,8,'F'); doc.rect(107,y,87,8,'F');
+    doc.rect(14,y,88,38,'S'); doc.rect(108,y,88,38,'S');
+    doc.setFillColor(245,245,245);
+    doc.rect(14,y,88,8,'F'); doc.rect(108,y,88,8,'F');
     doc.setFontSize(8);
-    doc.text('MÜŞTERİ ONAYI',18,y+5.5);
-    doc.text('ALGA MÜMESSİLLİK',111,y+5.5);
+    doc.text('MUSTERI ONAYI',18,y+5.5);
+    doc.text('ALGA MUMESSILLIK',112,y+5.5);
     doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,100,100);
     doc.text('Ad Soyad: _______________________',18,y+14);
-    doc.text('İmza / Kaşe:',18,y+20);
-    doc.text('Tarih: __________________________',18,y+29);
-    doc.text('Yetkili: ________________________',111,y+14);
-    doc.text('İmza:',111,y+20);
-    doc.text('Tarih: __________________________',111,y+29);
+    doc.text('Imza / Kase:',18,y+21);
+    doc.text('Tarih: _______________',18,y+33);
+    doc.text('Yetkili: '+alga,112,y+14);
+    doc.text('Imza:',112,y+21);
+    doc.text('Tarih: _______________',112,y+33);
 
-    doc.save('ALGA_Teklif_'+info.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+musteri.slice(0,15).replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
+    doc.save('ALGA_Teklif_'+info.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+musteri.slice(0,12).replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
 
   } else {
     // ── SİPARİŞ FORMU ──
-    header(doc,1);
-    let y=34;
+    drawHeader(); let y=34;
 
-    doc.setFont('helvetica','bold'); doc.setFontSize(14);
-    doc.setTextColor(200,16,46);
-    doc.text('SİPARİŞ & ONAY FORMU',14,y); y+=7;
+    // Başlık
+    doc.setFillColor(26,26,26);
+    doc.rect(14,y,182,14,'F');
+    doc.setFillColor(200,16,46);
+    doc.rect(14,y+14,182,1.5,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(255,255,255);
+    doc.text('SIPARIS & ONAY FORMU',18,y+9);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(180,180,180);
+    doc.text(info.name+' · '+teklifNo+' · '+tarih,18,y+13);
+    y+=18;
 
-    doc.setFont('helvetica','normal'); doc.setFontSize(8);
-    doc.setTextColor(100,100,100);
-    doc.text('Lütfen tüm koşulları dikkatle okuyun ve her maddeyi onaylamak için kutuyu işaretleyin.',14,y); y+=7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,100,100);
+    doc.text('Lutfen asagidaki tum maddeleri okuyun, her birini anladiginizi onaylayin ve altinda imzalayin.',14,y);
+    y+=7;
 
-    y = infoTable(doc, y, [
-      ['Teklif No',teklifNo,'Tarih',tarih],
-      ['Müşteri',musteri,'Yetkili',yetkili],
-      ['Model',info.name,'Opsiyon',opsiyon],
-      ['Fiyat',fmtN(toplam),'Para Birimi',cur],
+    y=infoRow(doc,y,[
+      ['Musteri',musteri,'Yetkili',yetkili],
+      ['Model',info.name,'Opsiyon',opsiyon+(info.hasColor?' · '+renk:'')],
+      ['Toplam Fiyat',fmtN(toplam),'Para Birimi',cur],
     ]); y+=6;
 
-    // Tikli onay maddeleri
-    doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    doc.setTextColor(200,16,46);
-    doc.text('Onay Maddeleri',14,y); y+=5;
-    doc.setDrawColor(220,220,220); doc.line(14,y,194,y); y+=4;
+    // TİKLİ ONAY MADDELERİ — PDF'de interaktif checkbox
+    y=sectionTitle(y,'Onay Maddeleri');
 
-    CHECKS.forEach((c,ci)=>{
-      const bg = ci%2===0?[255,255,255]:[248,248,248];
-      doc.setFillColor(...bg);
-      doc.rect(14,y,180,10,'F');
-      doc.setDrawColor(220,220,220); doc.rect(14,y,180,10,'S');
-      // Checkbox
-      doc.setDrawColor(200,16,46); doc.setLineWidth(0.8);
-      doc.rect(18,y+2.5,5,5,'S');
-      doc.setLineWidth(0.2);
-      // Text
-      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(40,40,40);
-      doc.text((ci+1)+'. '+c.main, 26, y+5.5);
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(120,120,120);
-      doc.text(c.sub, 26, y+8.8);
-      y+=10;
+    CHECKS.forEach(cat=>{
+      y=checkY(y,12+cat.items.length*12);
+      // Kategori başlığı
+      doc.setFillColor(200,16,46);
+      doc.rect(14,y,182,7,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(255,255,255);
+      doc.text(cat.cat,18,y+4.8);
+      y+=7;
+
+      cat.items.forEach((item,ii)=>{
+        const bg=ii%2===0?[255,255,255]:[248,250,248];
+        doc.setFillColor(...bg);
+        doc.rect(14,y,182,11,'F');
+        doc.setDrawColor(220,220,220); doc.rect(14,y,182,11,'S');
+
+        // TİKLENEBİLİR CHECKBOX — jsPDF AcroForm
+        try{
+          doc.addField({
+            type:'checkbox',
+            name:'check_'+cat.cat.replace(/\s/g,'_')+'_'+ii,
+            x:18, y:H-y-9, w:5, h:5,
+            options:{AS:'Off', value:'On'}
+          });
+        }catch(e){
+          // Fallback: sadece kutu çiz
+          doc.setDrawColor(200,16,46); doc.setLineWidth(0.7);
+          doc.rect(18,y+3,5,5,'S'); doc.setLineWidth(0.2);
+        }
+
+        // Kutu çiz (görünür)
+        doc.setDrawColor(200,16,46); doc.setLineWidth(0.8);
+        doc.rect(18,y+3,5,5,'S'); doc.setLineWidth(0.2);
+
+        // Metin
+        doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(30,30,30);
+        doc.text(item.t,26,y+6);
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(120,120,120);
+        doc.text(item.s,26,y+9.5);
+        y+=11;
+      });
+      y+=3;
     });
-    y+=6;
 
     // Fiyat özeti
-    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(200,16,46);
-    doc.text('Sipariş Özeti',14,y); y+=5;
-    doc.setDrawColor(220,220,220); doc.line(14,y,194,y); y+=4;
-    [['Makine',fmtN(fiyat)],['Çelik Yapı',celik>0?fmtN(celik):'Dahil değil'],['İndirim',indirim>0?'-'+fmtN(indirim):'—']].forEach((r,ri)=>{
+    y=checkY(y,50);
+    y=sectionTitle(y,'Siparis Ozeti');
+    const sItems=[[info.name,fmtN(fiyat)]];
+    if(celik>0) sItems.push(['Celik Yapi',fmtN(celik)]);
+    if(indirim>0) sItems.push(['INDIRIM','-'+fmtN(indirim)]);
+    sItems.forEach((r,ri)=>{
       doc.setFillColor(ri%2===0?255:248,ri%2===0?255:248,ri%2===0?255:248);
-      doc.rect(14,y,180,7,'F'); doc.setDrawColor(220,220,220); doc.rect(14,y,180,7,'S');
-      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(80,80,80);
-      doc.text(r[0],18,y+4.8);
-      doc.setFont('helvetica','bold'); doc.setTextColor(40,40,40);
+      doc.rect(14,y,182,7,'F'); doc.setDrawColor(220,220,220); doc.rect(14,y,182,7,'S');
+      doc.setFont('helvetica',r[0]==='INDIRIM'?'bold':'normal'); doc.setFontSize(9);
+      doc.setTextColor(r[0]==='INDIRIM'?200:60,r[0]==='INDIRIM'?16:60,r[0]==='INDIRIM'?46:60);
+      doc.text(r[0],18,y+4.8); doc.setFont('helvetica','bold');
       doc.text(r[1],W-16,y+4.8,{align:'right'}); y+=7;
     });
-    doc.setFillColor(26,26,26); doc.rect(14,y,180,9,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(255,255,255);
-    doc.text('GENEL TOPLAM',18,y+6);
-    doc.text(fmtN(toplam),W-16,y+6,{align:'right'}); y+=13;
+    doc.setFillColor(26,26,26); doc.rect(14,y,182,10,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(255,255,255);
+    doc.text('GENEL TOPLAM',18,y+6.5);
+    doc.text(fmtN(toplam),W-16,y+6.5,{align:'right'}); y+=13;
 
-    // Takvim
-    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(200,16,46);
-    doc.text('Teslim Planı (Tahmini)',14,y); y+=5;
-    doc.setDrawColor(220,220,220); doc.line(14,y,194,y); y+=4;
-    [['Sipariş Onayı','Bugün','%50 avans ödemesi ile başlar'],['Üretim','1–4 hafta','Fabrika üretim süreci'],['Sevkiyat','12–14 hafta','İstanbul Gümrüğüne teslim'],['Kurulum','Anlaşmaya göre','ALGA teknik ekibi ile birlikte']].forEach((r,ri)=>{
+    // Teslim takvimi
+    y=checkY(y,45);
+    y=sectionTitle(y,'Teslim Plani (Tahmini)');
+    [['Siparis Onayi','Bugun','%50 avans odemesi ile baslar'],
+     ['Uretim','1 – 4 hafta','Fabrika uretim sureci'],
+     ['Sevkiyat','12 – 14 hafta','Istanbul Gumrugune teslim'],
+     ['Kurulum','Anlasmazlara gore','ALGA teknik ekibi ile birlikte']
+    ].forEach((r,ri)=>{
       doc.setFillColor(ri%2===0?255:248,ri%2===0?255:248,ri%2===0?255:248);
-      doc.rect(14,y,180,7,'F'); doc.setDrawColor(220,220,220); doc.rect(14,y,180,7,'S');
+      doc.rect(14,y,182,7,'F'); doc.setDrawColor(220,220,220); doc.rect(14,y,182,7,'S');
       doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(50,50,50);
       doc.text(r[0],18,y+4.8);
-      doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
-      doc.text(r[1],70,y+4.8);
-      doc.setTextColor(140,140,140);
-      doc.text(r[2],110,y+4.8);
+      doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80); doc.text(r[1],65,y+4.8);
+      doc.setTextColor(140,140,140); doc.text(r[2],105,y+4.8);
       y+=7;
-    });
-    y+=8;
+    }); y+=6;
 
     // İmza
-    if(y>235){ doc.addPage(); header(doc,2); y=35; }
-    doc.rect(14,y,87,40,'S'); doc.rect(107,y,87,40,'S');
-    doc.setFillColor(245,245,245);
-    doc.rect(14,y,87,8,'F'); doc.rect(107,y,87,8,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(50,50,50);
-    doc.text('MÜŞTERİ ONAYI',18,y+5.5);
-    doc.text('ALGA MÜMESSİLLİK',111,y+5.5);
-    doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
-    doc.text('Firma Adı: '+musteri,18,y+14);
-    doc.text('Ad Soyad: _______________________',18,y+20);
-    doc.text('İmza / Kaşe:',18,y+27);
-    doc.text('Tarih: __________________________',18,y+35);
-    doc.text('Yetkili: '+alga,111,y+14);
-    doc.text('Ad Soyad: _______________________',111,y+20);
-    doc.text('İmza:',111,y+27);
-    doc.text('Tarih: __________________________',111,y+35);
+    y=checkY(y,48);
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(50,50,50);
+    [[14,'MUSTERI ONAYI',musteri],[108,'ALGA MUMESSILLIK',alga]].forEach(([x,title,name])=>{
+      doc.rect(x,y,88,44,'S');
+      doc.setFillColor(245,245,245); doc.rect(x,y,88,8,'F');
+      doc.setFontSize(8); doc.text(title,x+4,y+5.5);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,100,100);
+      doc.text('Firma: '+name,x+4,y+14);
+      doc.text('Ad Soyad: ___________________',x+4,y+21);
+      doc.text('Imza / Kase:',x+4,y+29);
+      doc.text('Tarih: ___________________',x+4,y+39);
+    });
 
-    doc.save('ALGA_Siparis_'+info.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+musteri.slice(0,15).replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
+    doc.save('ALGA_Siparis_'+info.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+musteri.slice(0,12).replace(/[^a-zA-Z0-9]/g,'_')+'.pdf');
   }
 }
 
-// Routing'e teklif ekle
-const _origGo = go;
+
+
+
 
 /* INIT */
 document.getElementById('mimg').src=IMGS['frente_roja'];
