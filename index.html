@@ -1465,8 +1465,9 @@ function recalc(){
 
   // Aylık toplamlar
   const ayGel  = ayArac * ucr;
-  const ayDeg  = ayArac * degV;   // tüm değişken gider (bakım dahil)
-  const ayGid  = ayDeg;           // MAKİNE BEDELİ HARİÇ — sadece işletme gideri
+  const ayDeg  = ayArac * degV;       // değişken gider
+  const ayMak  = makTL / 60;          // makine bedeli 60 aylık payı (gösterim için)
+  const ayGid  = ayDeg + ayMak;       // toplam gider (makine dahil)
   const ayKar  = ayGel - ayGid;
   const karC   = ayKar>=0?'var(--green)':'var(--red)';
 
@@ -1494,20 +1495,21 @@ function recalc(){
 
   // Gider dökümü — sıfır olanlar gizlenir
   const items=[
-    ['⚡ Elektrik',         dEl   * ayArac],
-    ['💧 Su',               dSu   * ayArac],
-    ['🫧 Köpük',            dKop  * ayArac],
-    ['✨ Cila',             dCil  * ayArac],
-    ['🔧 Yedek parça & bakım', ayBakim]
+    ['⚡ Elektrik',              dEl   * ayArac],
+    ['💧 Su',                    dSu   * ayArac],
+    ['🫧 Köpük',                 dKop  * ayArac],
+    ['✨ Cila',                  dCil  * ayArac],
+    ['🔧 Yedek parça & bakım',   ayBakim],
+    ['🏭 Makine bedeli payı',    ayMak],
   ].filter(([,v])=>v>0.5);
 
   document.getElementById('br').innerHTML=
     items.map(([n,v])=>`<div class="drow"><span class="dn">${n}</span><span class="dv">${fmtTL(v)}</span><span class="dv2">${fmtEUR(v).replace('= ','')}</span></div>`).join('')+
     `<div class="drow tot"><span class="dn">Toplam aylık gider</span><span class="dv">${fmtTL(ayGid)}</span><span class="dv2">${Math.round(ayGid/(eurTL>5?eurTL:42))} €</span></div>`;
 
-  // Geri dönüş — makine bedeli ne zaman işletme kârıyla karşılanır?
-  const aylıkFazla = ayGel - ayGid;  // aylık net kâr (makine hariç)
-  const pbAy = aylıkFazla > 0 ? Math.ceil(makTL / aylıkFazla) : 999;
+  // Geri dönüş — makine bedeli işletme kârıyla ne zaman karşılanır?
+  const isletmeKar = ayGel - ayDeg;  // değişken gider dışarıda, makine bedeli hariç
+  const pbAy = isletmeKar > 0 ? Math.ceil(makTL / isletmeKar) : 999;
   const pbStr=fmtSure(pbAy);
   document.getElementById('pb-lbl').textContent=pbStr;
   document.getElementById('pb-bar').style.width=Math.min(100,(pbAy/(10*12))*100)+'%';
