@@ -1465,9 +1465,8 @@ function recalc(){
 
   // Aylık toplamlar
   const ayGel  = ayArac * ucr;
-  const ayDeg  = ayArac * degV;       // değişken gider
-  const ayMak  = makTL / 60;          // makine bedeli 60 aylık payı (gösterim için)
-  const ayGid  = ayDeg + ayMak;       // toplam gider (makine dahil)
+  const ayDeg  = ayArac * degV;   // sadece değişken işletme gideri
+  const ayGid  = ayDeg;           // makine bedeli buraya dahil değil — ayrı gösteriliyor
   const ayKar  = ayGel - ayGid;
   const karC   = ayKar>=0?'var(--green)':'var(--red)';
 
@@ -1500,7 +1499,6 @@ function recalc(){
     ['🫧 Köpük',                 dKop  * ayArac],
     ['✨ Cila',                  dCil  * ayArac],
     ['🔧 Yedek parça & bakım',   ayBakim],
-    ['🏭 Makine bedeli payı',    ayMak],
   ].filter(([,v])=>v>0.5);
 
   document.getElementById('br').innerHTML=
